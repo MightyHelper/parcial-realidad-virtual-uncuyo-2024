@@ -1,0 +1,36 @@
+<component name="libraryTable">
+  <library name="jogamp.gluegen.rt.main" type="repository">
+    <properties maven-id="org.jogamp.gluegen:gluegen-rt-main:2.3.2" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-main-2.3.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-android-aarch64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-android-armv6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-linux-amd64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-linux-armv6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-linux-armv6hf.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-linux-i586.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-macosx-universal.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-solaris-amd64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-solaris-i586.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-windows-amd64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-natives-windows-i586.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-main-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/gluegen-rt-2.3.2-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES />
+  </library>
+</component>
