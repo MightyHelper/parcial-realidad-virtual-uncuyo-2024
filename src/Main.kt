@@ -1,5 +1,8 @@
 import processing.core.PApplet
+import processing.core.PImage
 import processing.core.PVector
+import java.awt.Image
+import javax.imageio.ImageIO
 import kotlin.math.pow
 
 private const val FRICTION = 0.999f
@@ -58,6 +61,10 @@ class App : PApplet() {
 	val MAX_HEIGHT = 250
 	var heightMap = mutableListOf<Int>()
 	var heightMapDerivative = listOf<Int>()
+	var renderTargetShip = true
+	var stars = mutableListOf<PVector>()
+	var earthPosition = PVector(0f, 0f)
+	var earthResource: PImage? = null
 	var ship = Ship(
 		PVector(-10f, MAX_HEIGHT * 2f),
 		PVector(0f, 0f),
@@ -74,15 +81,55 @@ class App : PApplet() {
 
 	override fun settings() {
 		size(800, 600)
-	}
-
-	fun translate(v: PVector) {
-		translate(v.x, v.y)
+		earthResource = getImage("earth.png")
 	}
 
 	override fun setup() {
 		initMap()
 		computeDeltaTime()
+	}
+
+	override fun draw() {
+		background(0)
+		renderUi()
+		if (renderTargetShip) {
+			translate(width.toFloat() / 2, height.toFloat() / 2)
+			scale(4f)
+			translate(-ship.position.x, ship.position.y)
+			translate(-50f * ship.velocity.x, 50 * ship.velocity.y)
+		} else {
+			translate(width.toFloat() / 2, height.toFloat() - 10)
+		}
+		scale(1f, -1f)
+		when (state) {
+			State.FLYING -> {
+				testIntersect()
+				val dt = computeDeltaTime()
+				handleKeys(dt)
+				timeStep(dt)
+			}
+
+			else -> {}
+		}
+
+		ship()
+		landscape()
+		stars()
+		earth()
+	}
+
+	fun getImage(url: String): PImage {
+		var image: Image
+		try {
+			image = ImageIO.read(App::class.java.getResourceAsStream(url));
+		} catch (_: IllegalArgumentException) {
+			image = ImageIO.read(App::class.java.getResourceAsStream("resources/$url"))
+		}
+		return PImage(image);
+	}
+
+	fun translate(v: PVector) {
+		translate(v.x, v.y)
 	}
 
 	private fun initMap() {
@@ -94,10 +141,19 @@ class App : PApplet() {
 			)
 		}.toMutableList()
 		// Ensure map is solvable
-		val guaranteedLandable = (0 until SIM_WIDTH - 1).random()
+		val guaranteedLandable = (1 until SIM_WIDTH - 1).random()
 		heightMap[guaranteedLandable - 1] = heightMap[guaranteedLandable]
 		heightMap[guaranteedLandable + 1] = heightMap[guaranteedLandable]
 		heightMapDerivative = heightMap.zipWithNext { a, b -> b - a }
+		repeat(1000) { i ->
+			val pos = PVector(random(width.toFloat()) - width / 2, random(height.toFloat()))
+			try {
+				if (pos.y > heightMap[landscapeXToIdx(pos.x)] + 10) stars.add(pos)
+			} catch (_: IndexOutOfBoundsException) {
+				stars.add(pos)
+			}
+		}
+		earthPosition = PVector(width * 0.25f, height * 0.75f)
 	}
 
 	fun strokeNormal() = stroke(displayNormal)
@@ -149,7 +205,8 @@ class App : PApplet() {
 		endShape()
 		noStroke()
 		for (i in -width / 2 until width / 2) {
-			infoColor(isLandable(i.toFloat()), 25f)
+			val alpha = constrain(-log(millis() % 3000f / 3000) * 50, 0f, 25f)
+			infoColor(isLandable(i.toFloat()), alpha)
 			rect(i.toFloat(), 0f, 1f, height.toFloat())
 		}
 	}
@@ -179,21 +236,16 @@ class App : PApplet() {
 
 	}
 
-	private fun infoColor(bool: Boolean, alpha: Float=255f) {
-		if (bool) {
-			fill(0f, 255f, 0f, alpha)
-		} else {
-			fill(255f, 0f, 0f, alpha)
-		}
-	}
+	private fun infoColor(bool: Boolean, alpha: Float = 255f) =
+		if (bool) fill(0f, 255f, 0f, alpha)
+		else fill(255f, 0f, 0f, alpha)
 
 	override fun keyPressed() {
 		pressedKeys.add(keyCode)
+		if (keyCode == 'V'.toInt()) renderTargetShip = !renderTargetShip
 	}
 
-	override fun keyReleased() {
-		pressedKeys.remove(keyCode)
-	}
+	override fun keyReleased() = Unit.also { pressedKeys.remove(keyCode) }
 
 	fun segmentsIntersect(a: PVector, b: PVector, c: PVector, d: PVector): Boolean {
 		val a1 = b.y - a.y
@@ -203,9 +255,7 @@ class App : PApplet() {
 		val b2 = c.x - d.x
 		val c2 = a2 * c.x + b2 * c.y
 		val det = a1 * b2 - a2 * b1
-		if (det == 0f) {
-			return false
-		}
+		if (det == 0f) return false
 		val x = (b2 * c1 - b1 * c2) / det
 		val y = (a1 * c2 - a2 * c1) / det
 		val isOnAB = (min(a.x, b.x) <= x && x <= max(a.x, b.x)) && (min(a.y, b.y) <= y && y <= max(a.y, b.y))
@@ -232,20 +282,12 @@ class App : PApplet() {
 				PVector(landscapeIdxToX(it + 1), heightMap[it + 1].toFloat())
 			)
 		}
-		(1 until SIM_WIDTH - 1).forEach {
-			if (isLandable(landscapeIdxToX(it)) && isLandable(landscapeIdxToX(it - 1))) {
-				fillDebug()
-				ellipse(landscapeIdxToX(it), heightMap[it].toFloat(), 5f, 5f)
-			}
-		}
 		val intersect = shipEdges.any { shipEdge ->
 			landscapeEdges.any { landscapeEdge ->
 				segmentsIntersect(shipEdge.first, shipEdge.second, landscapeEdge.first, landscapeEdge.second)
 			}
 		}
-		if (intersect) {
-			calculateIfCrash()
-		}
+		if (intersect) calculateIfCrash()
 	}
 
 	fun calculateIfCrash() {
@@ -253,16 +295,17 @@ class App : PApplet() {
 		val velocityOk = isVelocityOkForLanding()
 		val landingOk = isRotationOkForLanding()
 		val landingOnEvenTerrain = isTerrainOkForLanding()
-		if (velocityOk && landingOk && landingOnEvenTerrain) {
-			if (state == State.FLYING) {
-				state = State.LANDED
-				println("Landed!")
-			}
-		} else {
+		if (!velocityOk || !landingOk || !landingOnEvenTerrain) {
 			if (state == State.FLYING) {
 				state = State.CRASHED
 				println("Crashed because velocityOk: $velocityOk, landingOk: $landingOk, landingOnEvenTerrain: $landingOnEvenTerrain")
 			}
+			return
+		}
+
+		if (state == State.FLYING) {
+			state = State.LANDED
+			println("Landed!")
 		}
 	}
 
@@ -312,24 +355,12 @@ class App : PApplet() {
 
 	}
 
-	override fun draw() {
-		background(0)
-		renderUi()
-		translate(width.toFloat() / 2, (height - 10).toFloat())
-		scale(1f, -1f)
-		when (state) {
-			State.FLYING -> {
-				testIntersect()
-				val dt = computeDeltaTime()
-				handleKeys(dt)
-				timeStep(dt)
-			}
+	fun earth() = image(earthResource, earthPosition.x, earthPosition.y, 50f, 50f)
 
-			else -> {}
-		}
-
-		ship()
-		landscape()
+	fun stars() {
+		fillNormal()
+		noStroke()
+		stars.forEach { ellipse(it.x, it.y, 1f, 1f) }
 	}
 
 	private fun handleKeys(dt: Float) {
