@@ -83,9 +83,44 @@ class App : PApplet() {
 	val pressedKeys: MutableSet<Int> = mutableSetOf()
 	lateinit var state: State
 
+	fun help() {
+		println(
+			"""
+     _____
+  __/__|__\___
+ |__  O O  __|
+    \     /
+     \___/
+  ~ Lunar Lander ~
+---------------------
+  Controls:
+  
+  [←] or [→]  : Turn Left / Right
+  [Space]     : Fire Main Thruster
+  [R]         : Reset Game
+  [V]         : Change View
+  [Z]         : Zoom In (Ship View)
+
+---------------------
+  On-Screen Info:
+  
+  - Top Left: Velocity, Position, and Rotation of the ship.
+  - Success Criteria: Three lines of text below the stats.
+    - If any line is red upon landing, you fail.
+  - Landing Zones: Flashing red and green rectangles indicate
+    where you can land safely.
+  
+  Objective: Safely land on the moon's surface! Good luck!
+---------------------
+		""".trimIndent()
+		)
+
+	}
+
 	override fun settings() {
 		size(800, 600)
 		earthResource = getImage("earth.png")
+		help()
 	}
 
 	override fun setup() {
@@ -102,7 +137,11 @@ class App : PApplet() {
 		initMap()
 		computeDeltaTime()
 		noise?.stop()
-		noise = BrownNoise(this)
+		try {
+			noise = BrownNoise(this)
+		} catch (_: NoClassDefFoundError) {
+			println("Audio not supported :c")
+		}
 	}
 
 	override fun draw() {
@@ -110,9 +149,9 @@ class App : PApplet() {
 		pushMatrix()
 		if (Config.renderTargetShip) {
 			translate(width.toFloat() / 2, height.toFloat() / 2)
-			if (Config.renderZoom){
+			if (Config.renderZoom) {
 				scale(1f / (ship.velocity.mag() + 0.05f))
-			}else{
+			} else {
 				scale(4f)
 			}
 			translate(-ship.position.x, ship.position.y)
@@ -252,8 +291,7 @@ class App : PApplet() {
 		fillDebug()
 		text(ship.position.str(), 10f, 10f)
 		text(ship.velocity.str(), 10f, 30f)
-		text(ship.acceleration.str(), 10f, 50f)
-		text(formatFloat(ship.rotation.position), 10f, 70f)
+		text(formatFloat(ship.rotation.position), 10f, 50f)
 		infoColor(isTerrainOkForLanding())
 		text("Terrain: " + isTerrainOkForLanding().toString(), 10f, 90f)
 		infoColor(isRotationOkForLanding())
@@ -407,28 +445,28 @@ class App : PApplet() {
 			if (Config.renderTargetShip) {
 				translate(it)
 				translate(-ship.position * 0.001f * it.z)
-				translate(-50f * ship.velocity.x* 0.01f, 50 * ship.velocity.y* 0.01f)
+				translate(-50f * ship.velocity.x * 0.01f, 50 * ship.velocity.y * 0.01f)
 			} else {
 				translate(it)
 			}
 			ellipse(0f, 0f, it.z / 50f, it.z / 50f)
 			popMatrix()
 		}
-		shootingStars.forEach{
+		shootingStars.forEach {
 			fillNormal()
 			noStroke()
 			for (i in 0 until 20) {
-				fill(255f,255f - i * 25)
+				fill(255f, 255f - i * 25)
 				pushMatrix()
 				if (Config.renderTargetShip) {
 					translate(it.position)
 					translate(-ship.position * 0.001f * it.position.z)
-					translate(-50f * ship.velocity.x* 0.01f, 50 * ship.velocity.y* 0.01f)
+					translate(-50f * ship.velocity.x * 0.01f, 50 * ship.velocity.y * 0.01f)
 				} else {
 					translate(it.position)
 				}
 				val sz = pow((10f - i.toFloat()) / 10f, 2f) * it.position.z / 40f
-				ellipse(it.velocity.x * -i * 4, it.velocity.y *- i * 4, sz, sz)
+				ellipse(it.velocity.x * -i * 4, it.velocity.y * -i * 4, sz, sz)
 				popMatrix()
 			}
 		}
@@ -440,7 +478,7 @@ class App : PApplet() {
 		if (' '.code in pressedKeys) {
 			ship.thrustUp(dt)
 			noise?.play(0.2f)
-		}else{
+		} else {
 			noise?.play(0.05f)
 		}
 	}

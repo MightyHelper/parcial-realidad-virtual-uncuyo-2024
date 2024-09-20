@@ -31,6 +31,11 @@
       <element id="extracted-dir" path="$PROJECT_DIR$/lib/jogl-all-2.3.2-natives-windows-i586.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/jetbrains/kotlin/kotlin-stdlib/2.0.10/kotlin-stdlib-2.0.10.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/jetbrains/annotations/13.0/annotations-13.0.jar" path-in-jar="/" />
+      <element id="library" level="project" name="KotlinJavaRuntime" />
+      <element id="library" level="project" name="jogamp.jogl.all.main" />
+      <element id="library" level="project" name="jogamp.gluegen.rt.main" />
+      <element id="library" level="project" name="jsyn-20170815" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/jsyn-20170815.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
