@@ -2,18 +2,31 @@ import processing.core.PApplet
 import processing.core.PImage
 import processing.core.PVector
 import java.awt.Image
+import java.util.Locale
 import javax.imageio.ImageIO
 import kotlin.math.pow
 
-private const val FRICTION = 0.999f
-private val GRAVITY = PVector(0f, -0.001f)
+
+object Config {
+	const val simWidth: Int = 50
+	const val maxHeight: Int = 250
+	val gravity: PVector = PVector(0f, -0.001f)
+	const val friction: Float = 0.999f
+	var renderTargetShip: Boolean = false
+	var renderZoom: Boolean = false
+	var earthPosition: PVector = PVector(200f, 200f)
+	const val displayNormal: Int = 0xffffffff.toInt()
+	const val accentTint: Int = 0xffff0000.toInt()
+	const val debugTint: Int = 0xfff0066f.toInt()
+	const val veryFarAway: Float = 100000000f
+}
 
 
 open class PhysicsItem(var position: PVector, var velocity: PVector, var acceleration: PVector) {
 	open fun timeStep(dt: Float) {
 		velocity.plusAssign(acceleration)
 		position.plusAssign(velocity * dt)
-		velocity.timesAssign(FRICTION.pow(dt))
+		velocity.timesAssign(Config.friction.pow(dt))
 		acceleration.timesAssign(0f)
 	}
 }
@@ -22,7 +35,7 @@ open class PhysicsValue(var position: Float, var velocity: Float, var accelerati
 	open fun timeStep(dt: Float) {
 		velocity += acceleration
 		position += velocity * dt
-		velocity *= FRICTION.pow(dt)
+		velocity *= Config.friction.pow(dt)
 		acceleration *= 0f
 	}
 }
@@ -31,7 +44,7 @@ open class PhysicsValue(var position: Float, var velocity: Float, var accelerati
 class Ship(position: PVector, velocity: PVector, acceleration: PVector, val size: PVector, val rotation: PhysicsValue) :
 	PhysicsItem(position, velocity, acceleration) {
 	override fun timeStep(dt: Float) {
-		acceleration.plusAssign(GRAVITY)
+		acceleration.plusAssign(Config.gravity)
 		super.timeStep(dt)
 		rotation.timeStep(dt)
 	}
@@ -57,27 +70,15 @@ enum class State {
 }
 
 class App : PApplet() {
-	val SIM_WIDTH = 50
-	val MAX_HEIGHT = 250
 	var heightMap = mutableListOf<Int>()
 	var heightMapDerivative = listOf<Int>()
-	var renderTargetShip = true
 	var stars = mutableListOf<PVector>()
-	var earthPosition = PVector(0f, 0f)
 	var earthResource: PImage? = null
-	var ship = Ship(
-		PVector(-10f, MAX_HEIGHT * 2f),
-		PVector(0f, 0f),
-		PVector(0f, 0f),
-		PVector(10f, 10f),
-		PhysicsValue(0.5f, 0f, 0f)
-	)
+	lateinit var ship: Ship
 	var lastFrameTime = 0L
-	var displayNormal: Int = color(255, 255, 255)
-	var accentTint: Int = color(255, 0, 0)
-	var debugTint: Int = color(0, 255, 0)
+
 	val pressedKeys: MutableSet<Int> = mutableSetOf()
-	var state: State = State.FLYING
+	lateinit var state: State
 
 	override fun settings() {
 		size(800, 600)
@@ -85,6 +86,15 @@ class App : PApplet() {
 	}
 
 	override fun setup() {
+		state = State.FLYING
+		stars = mutableListOf()
+		ship = Ship(
+			PVector(random(100f) - 50f, Config.maxHeight * 2f),
+			PVector(random(1f) - 0.5f, random(1f) - 0.5f),
+			PVector(0f, 0f),
+			PVector(10f, 10f),
+			PhysicsValue(0.5f, 0f, 0f)
+		)
 		initMap()
 		computeDeltaTime()
 	}
@@ -92,9 +102,13 @@ class App : PApplet() {
 	override fun draw() {
 		background(0)
 		renderUi()
-		if (renderTargetShip) {
+		if (Config.renderTargetShip) {
 			translate(width.toFloat() / 2, height.toFloat() / 2)
-			scale(4f)
+			if (Config.renderZoom){
+				scale(1f / (ship.velocity.mag() + 0.05f))
+			}else{
+				scale(4f)
+			}
 			translate(-ship.position.x, ship.position.y)
 			translate(-50f * ship.velocity.x, 50 * ship.velocity.y)
 		} else {
@@ -121,11 +135,12 @@ class App : PApplet() {
 	fun getImage(url: String): PImage {
 		var image: Image
 		try {
-			image = ImageIO.read(App::class.java.getResourceAsStream(url));
+			image = ImageIO.read(App::class.java.getResourceAsStream(url))
 		} catch (_: IllegalArgumentException) {
 			image = ImageIO.read(App::class.java.getResourceAsStream("resources/$url"))
 		}
-		return PImage(image);
+		@Suppress("DEPRECATION")
+		return PImage(image)
 	}
 
 	fun translate(v: PVector) {
@@ -133,15 +148,15 @@ class App : PApplet() {
 	}
 
 	private fun initMap() {
-		heightMap = (-SIM_WIDTH / 2 until SIM_WIDTH / 2).map {
+		heightMap = (-Config.simWidth / 2 until Config.simWidth / 2).map {
 			constrain(
-				-(it * it / 2) + MAX_HEIGHT + floor((randomGaussian() - 0.5f) * 10),
+				-(it * it / 2) + Config.maxHeight + floor((randomGaussian() - 0.5f) * 10),
 				0,
-				MAX_HEIGHT
+				Config.maxHeight
 			)
 		}.toMutableList()
 		// Ensure map is solvable
-		val guaranteedLandable = (1 until SIM_WIDTH - 1).random()
+		val guaranteedLandable = (1 until Config.simWidth - 1).random()
 		heightMap[guaranteedLandable - 1] = heightMap[guaranteedLandable]
 		heightMap[guaranteedLandable + 1] = heightMap[guaranteedLandable]
 		heightMapDerivative = heightMap.zipWithNext { a, b -> b - a }
@@ -153,15 +168,15 @@ class App : PApplet() {
 				stars.add(pos)
 			}
 		}
-		earthPosition = PVector(width * 0.25f, height * 0.75f)
+		Config.earthPosition = PVector(width * 0.25f, height * 0.75f)
 	}
 
-	fun strokeNormal() = stroke(displayNormal)
-	fun fillNormal() = fill(displayNormal)
-	fun strokeAccent() = stroke(accentTint)
-	fun fillAccent() = fill(accentTint)
-	fun strokeDebug() = stroke(debugTint)
-	fun fillDebug() = fill(debugTint)
+	fun strokeNormal() = stroke(Config.displayNormal)
+	fun fillNormal() = fill(Config.displayNormal)
+	fun strokeAccent() = stroke(Config.accentTint)
+	fun fillAccent() = fill(Config.accentTint)
+	fun strokeDebug() = stroke(Config.debugTint)
+	fun fillDebug() = fill(Config.debugTint)
 
 	fun ship() {
 		pushMatrix()
@@ -185,27 +200,23 @@ class App : PApplet() {
 		popMatrix()
 	}
 
-	fun landscapeIdxToX(idx: Int): Float = 8 * (idx - SIM_WIDTH.toFloat() / 2)
+	fun landscapeIdxToX(idx: Int): Float = 8 * (idx - Config.simWidth.toFloat() / 2)
 
-	fun landscapeXToIdx(x: Float): Int = round((x / 8) + (SIM_WIDTH / 2))
+	fun landscapeXToIdx(x: Float): Int = round((x / 8) + (Config.simWidth / 2))
 
 	fun landscape() {
 		noFill()
 		beginShape()
 		strokeNormal()
-		for (i in 0 until SIM_WIDTH) {
+		for (i in 0 until Config.simWidth) {
 			vertex(landscapeIdxToX(i), heightMap[i].toFloat())
 		}
 		endShape()
-		strokeDebug()
-		beginShape()
-		for (i in 0 until SIM_WIDTH - 1) {
-			vertex(landscapeIdxToX(i), heightMap[i].toFloat())
-		}
-		endShape()
+		line(-Config.veryFarAway, 0f, Config.veryFarAway, 0f)
 		noStroke()
+		// Flash the terrain red if it's not landable
 		for (i in -width / 2 until width / 2) {
-			val alpha = constrain(-log(millis() % 3000f / 3000) * 50, 0f, 25f)
+			val alpha = constrain(-log(millis() % 6000f / 3000) * 50, 0f, 25f)
 			infoColor(isLandable(i.toFloat()), alpha)
 			rect(i.toFloat(), 0f, 1f, height.toFloat())
 		}
@@ -221,18 +232,19 @@ class App : PApplet() {
 	}
 
 	fun debug() {
-		fill(255)
-		stroke(255)
+		strokeDebug()
+		fillDebug()
 		text(ship.position.str(), 10f, 10f)
 		text(ship.velocity.str(), 10f, 30f)
 		text(ship.acceleration.str(), 10f, 50f)
-		text(ship.rotation.position.toString(), 10f, 70f)
+		text(formatFloat(ship.rotation.position), 10f, 70f)
 		infoColor(isTerrainOkForLanding())
 		text("Terrain: " + isTerrainOkForLanding().toString(), 10f, 90f)
 		infoColor(isRotationOkForLanding())
 		text("Rotation: " + isRotationOkForLanding().toString(), 10f, 110f)
 		infoColor(isVelocityOkForLanding())
 		text("Velocity: " + isVelocityOkForLanding().toString(), 10f, 130f)
+
 
 	}
 
@@ -242,7 +254,9 @@ class App : PApplet() {
 
 	override fun keyPressed() {
 		pressedKeys.add(keyCode)
-		if (keyCode == 'V'.toInt()) renderTargetShip = !renderTargetShip
+		if (keyCode == 'V'.code) Config.renderTargetShip = !Config.renderTargetShip
+		if (keyCode == 'Z'.code) Config.renderZoom = !Config.renderZoom
+		if (keyCode == 'R'.code) setup()
 	}
 
 	override fun keyReleased() = Unit.also { pressedKeys.remove(keyCode) }
@@ -276,12 +290,20 @@ class App : PApplet() {
 			PVector(-shipSize.x / 2, -shipSize.y / 2),
 		).map { it.rotate(shipRotation) + shipPos }
 		val shipEdges = shipVertices.zipWithNext { a, b -> Pair(a, b) }
-		val landscapeEdges = (0 until SIM_WIDTH - 1).map {
+		val landscapeEdges = (0 until Config.simWidth - 1).map {
 			Pair(
 				PVector(landscapeIdxToX(it), heightMap[it].toFloat()),
 				PVector(landscapeIdxToX(it + 1), heightMap[it + 1].toFloat())
 			)
-		}
+		}.toMutableList()
+		landscapeEdges.addAll(
+			listOf(
+				Pair(
+					PVector(-Config.veryFarAway, 0f),
+					PVector(Config.veryFarAway, 0f)
+				),
+			)
+		)
 		val intersect = shipEdges.any { shipEdge ->
 			landscapeEdges.any { landscapeEdge ->
 				segmentsIntersect(shipEdge.first, shipEdge.second, landscapeEdge.first, landscapeEdge.second)
@@ -355,12 +377,23 @@ class App : PApplet() {
 
 	}
 
-	fun earth() = image(earthResource, earthPosition.x, earthPosition.y, 50f, 50f)
+	fun earth() = image(earthResource, Config.earthPosition.x, Config.earthPosition.y, 50f, 50f)
 
 	fun stars() {
 		fillNormal()
 		noStroke()
-		stars.forEach { ellipse(it.x, it.y, 1f, 1f) }
+		stars.forEach {
+			pushMatrix()
+			if (Config.renderTargetShip) {
+				translate(it)
+				translate(-ship.position * 0.01f)
+				translate(-50f * ship.velocity.x* 0.01f, 50 * ship.velocity.y* 0.01f)
+			} else {
+				translate(it)
+			}
+			ellipse(0f, 0f, 1f, 1f)
+			popMatrix()
+		}
 	}
 
 	private fun handleKeys(dt: Float) {
@@ -371,8 +404,10 @@ class App : PApplet() {
 }
 
 private fun PVector.str(): String {
-	return "$x, $y"
+	return "${formatFloat(x)}, ${formatFloat(y)}"
 }
+
+private fun formatFloat(x: Float): String = String.format(Locale.ROOT, "%.2f", x)
 
 operator fun PVector.plusAssign(other: PVector) {
 	this.add(other)
