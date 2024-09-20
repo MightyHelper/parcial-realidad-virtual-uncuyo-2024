@@ -84,35 +84,75 @@ class App : PApplet() {
 	lateinit var state: State
 
 	fun help() {
+		val e = "\u001b"
+		val c1 = "\u001b[1;37m"
+		val n = "\u001b[0m"
+		val c2 = "\u001b[1;33m"
+		val c3 = "\u001b[1;34m"
+		val c4 = "\u001b[1;32m"
+		val c5 = "\u001b[1;31m"
+		val c6 = "\u001b[1;36m"
+		val c7 = "\u001b[1;35m"
 		println(
 			"""
-     _____
-  __/__|__\___
- |__  O O  __|
-    \     /
-     \___/
-  ~ Lunar Lander ~
----------------------
-  Controls:
-  
-  [←] or [→]  : Turn Left / Right
-  [Space]     : Fire Main Thruster
-  [R]         : Reset Game
-  [V]         : Change View
-  [Z]         : Zoom In (Ship View)
+${c4}
+██╗░░░░░██╗░░░██╗███╗░░██╗░█████╗░██████╗░  ██╗░░░░░░█████╗░███╗░░██╗██████╗░███████╗██████╗░
+██║░░░░░██║░░░██║████╗░██║██╔══██╗██╔══██╗  ██║░░░░░██╔══██╗████╗░██║██╔══██╗██╔════╝██╔══██╗
+██║░░░░░██║░░░██║██╔██╗██║███████║██████╔╝  ██║░░░░░███████║██╔██╗██║██║░░██║█████╗░░██████╔╝
+██║░░░░░██║░░░██║██║╚████║██╔══██║██╔══██╗  ██║░░░░░██╔══██║██║╚████║██║░░██║██╔══╝░░██╔══██╗
+███████╗╚██████╔╝██║░╚███║██║░░██║██║░░██║  ███████╗██║░░██║██║░╚███║██████╔╝███████╗██║░░██║
+╚══════╝░╚═════╝░╚═╝░░╚══╝╚═╝░░╚═╝╚═╝░░╚═╝  ╚══════╝╚═╝░░╚═╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝
+${c3}                 ____
+                /___.`--.____ .--. ____.--(
+                       .'_.- (    ) -._'.
+                     .'.'    |'..'|    '.'.
+              .-.  .' /'--.__|____|__.--'\ '.  .-.
+             (O).)-| |  \    |    |    /  | |-(.(O)
+              `-'  '-'-._'-./      \.-'_.-'-'  `-'
+                 _ | |   '-.________.-'   | | _
+              .' _ | |     |   __   |     | | _ '.
+             / .' ''.|     | /    \ |     |.'' '. \
+             | |( )| '.    ||      ||    .' |( )| |
+             \ '._.'   '.  | \    / |  .'   '._.' /
+              '.__ ______'.|__'--'__|.'______ __.'
+             .'_.-|         |------|         |-._'.
+            //\\  |         |--::--|         |  //\\
+           //  \\ |         |--::--|         | //  \\
+          //    \\|        /|--::--|\        |//    \\
+         / '._.-'/|_______/ |--::--| \_______|\`-._.' \
+        / __..--'        /__|--::--|__\        `--..__ \
+       / /               '-.|--::--|.-'               \ \
+      / /                   |--::--|                   \ \
+     / /                    |--::--|                    \ \
+ _.-'  `-._                 _..||.._                  _.-` '-._
+'--..__..--'               '-.____.-'                '--..__..-'
 
----------------------
-  On-Screen Info:
+  ${c4}~ Lunar Lander ~${n}
+${c3}---------------------${n}
+  ${c6}Controls:${n}
   
-  - Top Left: Velocity, Position, and Rotation of the ship.
-  - Success Criteria: Three lines of text below the stats.
-    - If any line is red upon landing, you fail.
-  - Landing Zones: Flashing red and green rectangles indicate
+  ${c2}[←] ${n}or ${c2}[→]${n}  : Turn Left / Right
+  ${c2}[Space]${n}     : Fire Main Thruster
+  ${c2}[R]${n}         : Reset Game
+  ${c2}[V]${n}         : Change View
+  ${c2}[Z]${n}         : Zoom In (Ship View)
+  ${c2}[Esc]${n}       : Close Game
+
+${c3}---------------------${n}
+  ${c6}On-Screen Info:${n}
+  
+  - ${c2}Top Left${n}: Velocity, Position, and Rotation of the ship.
+  - ${c2}Success Criteria${n}: Three lines of text below the stats.
+    - If any line is ${c5}red${n} upon landing, you fail.
+  - ${c2}Landing Zones${n}: Flashing ${c5}red${n} and ${c4}green${n} rectangles indicate
     where you can land safely.
   
-  Objective: Safely land on the moon's surface! Good luck!
----------------------
-		""".trimIndent()
+  ${c6}Objective:${n} Safely land on the moon's surface!
+${c3}---------------------${n}
+  ${c6}Created by:${n}
+  ${c5}Federico Williamson - 09 2024${n}
+${c3}---------------------${n}
+    """.trimIndent()
 		)
 
 	}
