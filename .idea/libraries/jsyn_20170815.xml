@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="jsyn-20170815">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/jsyn-20170815.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

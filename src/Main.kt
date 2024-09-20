@@ -1,6 +1,7 @@
 import processing.core.PApplet
 import processing.core.PImage
 import processing.core.PVector
+import processing.sound.BrownNoise
 import java.awt.Image
 import java.util.Locale
 import javax.imageio.ImageIO
@@ -73,9 +74,11 @@ class App : PApplet() {
 	var heightMap = mutableListOf<Int>()
 	var heightMapDerivative = listOf<Int>()
 	var stars = mutableListOf<PVector>()
+	var shootingStars = mutableListOf<PhysicsItem>()
 	var earthResource: PImage? = null
 	lateinit var ship: Ship
 	var lastFrameTime = 0L
+	var noise: BrownNoise? = null
 
 	val pressedKeys: MutableSet<Int> = mutableSetOf()
 	lateinit var state: State
@@ -88,6 +91,7 @@ class App : PApplet() {
 	override fun setup() {
 		state = State.FLYING
 		stars = mutableListOf()
+		shootingStars = mutableListOf()
 		ship = Ship(
 			PVector(random(100f) - 50f, Config.maxHeight * 2f),
 			PVector(random(1f) - 0.5f, random(1f) - 0.5f),
@@ -97,11 +101,13 @@ class App : PApplet() {
 		)
 		initMap()
 		computeDeltaTime()
+		noise?.stop()
+		noise = BrownNoise(this)
 	}
 
 	override fun draw() {
 		background(0)
-		renderUi()
+		pushMatrix()
 		if (Config.renderTargetShip) {
 			translate(width.toFloat() / 2, height.toFloat() / 2)
 			if (Config.renderZoom){
@@ -121,15 +127,24 @@ class App : PApplet() {
 				val dt = computeDeltaTime()
 				handleKeys(dt)
 				timeStep(dt)
+				if (random(10f) < 0.1) spawnShootingStar()
 			}
 
 			else -> {}
 		}
-
 		ship()
-		landscape()
 		stars()
+		landscape()
 		earth()
+		popMatrix()
+		renderUi()
+	}
+
+	fun spawnShootingStar() {
+		val width1 = width
+		val startX = floatArrayOf(-width1.toFloat(), width1.toFloat()).random()
+		val pos = PVector(startX, random(height.toFloat()), random(100f)) + ship.position
+		shootingStars.add(PhysicsItem(pos, PVector((2f + random(4f)) * -startX / width1, random(1f)), PVector(0f, 0f)))
 	}
 
 	fun getImage(url: String): PImage {
@@ -161,7 +176,7 @@ class App : PApplet() {
 		heightMap[guaranteedLandable + 1] = heightMap[guaranteedLandable]
 		heightMapDerivative = heightMap.zipWithNext { a, b -> b - a }
 		repeat(1000) { i ->
-			val pos = PVector(random(width.toFloat()) - width / 2, random(height.toFloat()))
+			val pos = PVector(random(width.toFloat()) - width / 2, random(height.toFloat()), random(100f))
 			try {
 				if (pos.y > heightMap[landscapeXToIdx(pos.x)] + 10) stars.add(pos)
 			} catch (_: IndexOutOfBoundsException) {
@@ -205,13 +220,13 @@ class App : PApplet() {
 	fun landscapeXToIdx(x: Float): Int = round((x / 8) + (Config.simWidth / 2))
 
 	fun landscape() {
-		noFill()
+		fill(0)
 		beginShape()
 		strokeNormal()
 		for (i in 0 until Config.simWidth) {
 			vertex(landscapeIdxToX(i), heightMap[i].toFloat())
 		}
-		endShape()
+		endShape(CLOSE)
 		line(-Config.veryFarAway, 0f, Config.veryFarAway, 0f)
 		noStroke()
 		// Flash the terrain red if it's not landable
@@ -225,6 +240,7 @@ class App : PApplet() {
 	fun timeStep(dt: Float) {
 		if (dt > 10000) return  // Too strange
 		ship.timeStep(dt)
+		shootingStars.forEach { it.timeStep(dt) }
 	}
 
 	fun computeDeltaTime(): Float {
@@ -319,6 +335,8 @@ class App : PApplet() {
 		val landingOnEvenTerrain = isTerrainOkForLanding()
 		if (!velocityOk || !landingOk || !landingOnEvenTerrain) {
 			if (state == State.FLYING) {
+				noise?.stop()
+				noise = null
 				state = State.CRASHED
 				println("Crashed because velocityOk: $velocityOk, landingOk: $landingOk, landingOnEvenTerrain: $landingOnEvenTerrain")
 			}
@@ -326,6 +344,8 @@ class App : PApplet() {
 		}
 
 		if (state == State.FLYING) {
+			noise?.stop()
+			noise = null
 			state = State.LANDED
 			println("Landed!")
 		}
@@ -386,20 +406,43 @@ class App : PApplet() {
 			pushMatrix()
 			if (Config.renderTargetShip) {
 				translate(it)
-				translate(-ship.position * 0.01f)
+				translate(-ship.position * 0.001f * it.z)
 				translate(-50f * ship.velocity.x* 0.01f, 50 * ship.velocity.y* 0.01f)
 			} else {
 				translate(it)
 			}
-			ellipse(0f, 0f, 1f, 1f)
+			ellipse(0f, 0f, it.z / 50f, it.z / 50f)
 			popMatrix()
+		}
+		shootingStars.forEach{
+			fillNormal()
+			noStroke()
+			for (i in 0 until 20) {
+				fill(255f,255f - i * 25)
+				pushMatrix()
+				if (Config.renderTargetShip) {
+					translate(it.position)
+					translate(-ship.position * 0.001f * it.position.z)
+					translate(-50f * ship.velocity.x* 0.01f, 50 * ship.velocity.y* 0.01f)
+				} else {
+					translate(it.position)
+				}
+				val sz = pow((10f - i.toFloat()) / 10f, 2f) * it.position.z / 40f
+				ellipse(it.velocity.x * -i * 4, it.velocity.y *- i * 4, sz, sz)
+				popMatrix()
+			}
 		}
 	}
 
 	private fun handleKeys(dt: Float) {
 		if (LEFT in pressedKeys) ship.rotateLeft(dt)
 		if (RIGHT in pressedKeys) ship.rotateRight(dt)
-		if (' '.code in pressedKeys) ship.thrustUp(dt)
+		if (' '.code in pressedKeys) {
+			ship.thrustUp(dt)
+			noise?.play(0.2f)
+		}else{
+			noise?.play(0.05f)
+		}
 	}
 }
 

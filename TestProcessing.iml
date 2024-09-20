@@ -13,5 +13,6 @@
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
     <orderEntry type="library" name="jogamp.jogl.all.main" level="project" />
     <orderEntry type="library" name="jogamp.gluegen.rt.main" level="project" />
+    <orderEntry type="library" name="jsyn-20170815" level="project" />
   </component>
 </module>
